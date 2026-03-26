@@ -14,7 +14,7 @@ public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long Patient_id;
 
     @Column(nullable = false)
     private String name;
@@ -27,7 +27,16 @@ public class Patient {
 
     private String phone;
 
+    private String password;
+
     private String disease;
+
+    // Blood Group (optional)
+    private String bloodGroup;
+
+    // Address
+    @Column(length = 500)
+    private String address;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
