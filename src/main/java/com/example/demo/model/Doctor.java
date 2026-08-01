@@ -2,40 +2,38 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
-@Table(name = "patients")
+@Entity
+@Table(name = "doctors")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class Patient {
+@NoArgsConstructor
+public class Doctor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long Patient_id;
+    private Long id;
 
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private int age;
-
     @Column(unique = true, nullable = false)
-    private String email;
+    private String emailId;
 
-    private String phone;
+    @Column(name = "contact_number", length = 15)
+    private Long contactNumber;
 
-    private String password;
+    @Column(nullable = false)
+    private String specialization;
 
-    private String disease;
+    @Column(nullable = false)
+    private String department;
 
-    // Blood Group (optional)
-    private String bloodGroup;
+    private boolean available = true;
 
-    // Address
     @Column(length = 500)
-    private String address;
+    private String bio;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
