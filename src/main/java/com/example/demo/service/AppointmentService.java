@@ -36,7 +36,7 @@ public class AppointmentService {
                 .patientName(appointment.getPatient().getName())
                 .patientEmail(appointment.getPatient().getEmail())
                 .patientPhone(appointment.getPatient().getPhone())
-                .doctorId(appointment.getDoctor().getDoctor_id())
+                .doctorId(appointment.getDoctor().getId())
                 .doctorName(appointment.getDoctor().getName())
                 .specialization(appointment.getDoctor().getSpecialization())
                 .appointmentDate(appointment.getAppointmentDate())
@@ -82,7 +82,7 @@ public class AppointmentService {
 
     // ─── Get By Patient ──────────────────────────────────────
     public List<AppointmentResponseDTO> getAppointmentsByPatient(Long patientId) {
-        return appointmentRepository.findByPatient_PatientId(patientId)
+        return appointmentRepository.findByPatientId(patientId)
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -90,7 +90,7 @@ public class AppointmentService {
 
     // ─── Get By Doctor ───────────────────────────────────────
     public List<AppointmentResponseDTO> getAppointmentsByDoctor(Long doctorId) {
-        return appointmentRepository.findByDoctor_DoctorId(doctorId)
+        return appointmentRepository.findByDoctorId(doctorId)
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
