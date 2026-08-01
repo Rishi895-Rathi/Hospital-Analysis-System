@@ -1,7 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.DTO.PatientResponseDTO;
+import com.example.demo.model.Appointment;
 import com.example.demo.model.Patient;
+import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,9 @@ public class PatientService {
 
     @Autowired
     private PatientRepository patientRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     // ─── Convert Entity to DTO ────────────────────────────────
     private PatientResponseDTO toDTO(Patient patient) {
@@ -73,12 +78,22 @@ public class PatientService {
         return toDTO(saved);
     }
 
-    // ─── Delete Patient ──────────────────────────────────────
+    // ─── Delete Patient + Cancel Appointments ────────────────
     public void deletePatient(Long id) {
         if (!patientRepository.existsById(id)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "Patient not found with id: " + id);
         }
+
+        //Patient ki saari appointments cancel karo
+        List<Appointment> appointments = appointmentRepository.findByPatientId(id);
+        if (!appointments.isEmpty()) {
+            appointments.forEach(a ->
+                    a.setStatus(Appointment.AppointmentStatus.CANCELLED));
+            appointmentRepository.saveAll(appointments);
+        }
+
+        //Phir patient delete karo
         patientRepository.deleteById(id);
     }
 

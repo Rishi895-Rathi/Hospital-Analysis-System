@@ -61,6 +61,23 @@ public class AppointmentService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + requestDTO.getDoctorId()));
 
+        // Conflict Check — same doctor, same date, same time
+        boolean conflict = appointmentRepository
+                .existsByDoctor_IdAndAppointmentDateAndAppointmentTime(
+                        requestDTO.getDoctorId(),
+                        requestDTO.getAppointmentDate(),
+                        requestDTO.getAppointmentTime()
+                );
+
+        if (conflict) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Doctor already has an appointment on " +
+                            requestDTO.getAppointmentDate() + " at " +
+                            requestDTO.getAppointmentTime()
+            );
+        }
+
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);

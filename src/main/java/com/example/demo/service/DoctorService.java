@@ -1,7 +1,9 @@
 package com.example.demo.service;
 
 import com.example.demo.DTO.DoctorResponseDTO;
+import com.example.demo.model.Appointment;
 import com.example.demo.model.Doctor;
+import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,9 @@ public class DoctorService {
 
     @Autowired
     private DoctorRepository doctorRepository;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     // ─── Convert Entity to DTO ────────────────────────────────
     private DoctorResponseDTO toDTO(Doctor doctor) {
@@ -70,12 +75,39 @@ public class DoctorService {
         return toDTO(saved);
     }
 
-    // ─── Delete Doctor ───────────────────────────────────────
+    // ─── Delete Doctor + Shift Appointments ──────────────────
     public void deleteDoctor(Long id) {
-        if (!doctorRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND, "Doctor not found with id: " + id);
+        Doctor deletedDoctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Doctor not found with id: " + id));
+
+        //Same specialization ka available doctor dhundo
+        List<Doctor> sameDoctors = doctorRepository
+                .findBySpecializationContainingIgnoreCase(deletedDoctor.getSpecialization())
+                .stream()
+                .filter(d -> !d.getId().equals(id) && d.isAvailable())
+                .collect(Collectors.toList());
+
+        //Deleted doctor ki appointments fetch karo
+        List<Appointment> appointments = appointmentRepository.findByDoctorId(id);
+
+        if (!appointments.isEmpty()) {
+            if (sameDoctors.isEmpty()) {
+                //Koi alternative doctor nahi — appointments CANCELLED kar do
+                appointments.forEach(a -> {
+                    a.setStatus(Appointment.AppointmentStatus.CANCELLED);
+                    a.setDoctor(null);
+                });
+                appointmentRepository.saveAll(appointments);
+            } else {
+                //Alternative doctor mil gaya — appointments shift karo
+                Doctor alternativeDoctor = sameDoctors.get(0);
+                appointments.forEach(a -> a.setDoctor(alternativeDoctor));
+                appointmentRepository.saveAll(appointments);
+            }
         }
+
+        //Doctor delete karo
         doctorRepository.deleteById(id);
     }
 
