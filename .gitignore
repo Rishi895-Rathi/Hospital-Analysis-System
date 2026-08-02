@@ -7,8 +7,6 @@ HELP.md
 !.env.example
 
 src/main/resources/application.properties
-src/main/resources/application-*.properties
-!src/main/resources/application-example.properties
 
 build/
 !gradle/wrapper/gradle-wrapper.jar
