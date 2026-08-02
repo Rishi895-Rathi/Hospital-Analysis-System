@@ -24,7 +24,9 @@ public class Patient {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Column(unique = true)
     private String phone;
+
     private String password;
     private String disease;
     private String bloodGroup;

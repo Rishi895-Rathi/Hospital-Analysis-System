@@ -17,6 +17,11 @@ public class AppointmentResponseDTO {
     private String status;
     private String reason;
 
+    // postponed
+    private LocalDate postponedDate;
+    private LocalTime postponedTime;
+    private String postponeReason;
+
     // ─── Patient Info ─────────────────────────────────────────
     private Long patientId;
     private String patientName;

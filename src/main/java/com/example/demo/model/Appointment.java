@@ -33,6 +33,10 @@ public class Appointment {
 
     private String reason;
 
+    private LocalDate postponedDate;
+    private LocalTime postponedTime;
+    private String postponeReason;
+
     private LocalDateTime createdAt;
 
     public enum AppointmentStatus {

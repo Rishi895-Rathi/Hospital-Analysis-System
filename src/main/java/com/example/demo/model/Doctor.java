@@ -21,7 +21,7 @@ public class Doctor {
     @Column(unique = true, nullable = false)
     private String emailId;
 
-    @Column(name = "contact_number", length = 15)
+    @Column(name = "contact_number", length = 15, unique = true)
     private Long contactNumber;
 
     @Column(nullable = false)
@@ -31,6 +31,10 @@ public class Doctor {
     private String department;
 
     private boolean available = true;
+
+    private boolean onLeave = false;
+    private LocalDate leaveStartDate;
+    private LocalDate leaveEndDate;
 
     @Column(length = 500)
     private String bio;
@@ -47,4 +51,6 @@ public class Doctor {
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    private String password;
 }

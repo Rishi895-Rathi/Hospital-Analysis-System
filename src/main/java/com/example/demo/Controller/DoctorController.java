@@ -67,4 +67,19 @@ public class DoctorController {
         List<DoctorResponseDTO> doctors = doctorService.getAvailableDoctors();
         return new ResponseEntity<>(doctors, HttpStatus.OK);
     }
+
+    // Leave apply karo
+    @PutMapping("/leave/{id}")
+    public ResponseEntity<String> applyLeave(@PathVariable Long id,
+                                             @RequestBody DoctorLeaveRequestDTO leaveRequest) {
+        String message = doctorService.applyLeave(id, leaveRequest);
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
+
+    //Leave se wapas aao
+    @PutMapping("/return/{id}")
+    public ResponseEntity<String> returnFromLeave(@PathVariable Long id) {
+        String message = doctorService.returnFromLeave(id);
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
 }

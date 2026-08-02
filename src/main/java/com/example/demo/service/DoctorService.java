@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.DTO.DoctorLeaveRequestDTO;
 import com.example.demo.DTO.DoctorResponseDTO;
 import com.example.demo.model.Appointment;
 import com.example.demo.model.Doctor;
@@ -7,6 +8,7 @@ import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +23,9 @@ public class DoctorService {
 
     @Autowired
     private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // ─── Convert Entity to DTO ────────────────────────────────
     private DoctorResponseDTO toDTO(Doctor doctor) {
@@ -37,6 +42,15 @@ public class DoctorService {
 
     // ─── Add Doctor ──────────────────────────────────────────
     public DoctorResponseDTO addDoctor(Doctor doctor) {
+        if (doctorRepository.findByEmailId(doctor.getEmailId()).isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Email already registered: " + doctor.getEmailId());
+        }
+        if (doctorRepository.findByContactNumber(doctor.getContactNumber()).isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Phone already registered: " + doctor.getContactNumber());
+        }
+        doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
         Doctor saved = doctorRepository.save(doctor);
         return toDTO(saved);
     }
@@ -81,34 +95,124 @@ public class DoctorService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + id));
 
-        //Same specialization ka available doctor dhundo
         List<Doctor> sameDoctors = doctorRepository
                 .findBySpecializationContainingIgnoreCase(deletedDoctor.getSpecialization())
                 .stream()
-                .filter(d -> !d.getId().equals(id) && d.isAvailable())
+                .filter(d -> !d.getId().equals(id) && d.isAvailable() && !d.isOnLeave())
                 .collect(Collectors.toList());
 
-        //Deleted doctor ki appointments fetch karo
         List<Appointment> appointments = appointmentRepository.findByDoctorId(id);
 
         if (!appointments.isEmpty()) {
             if (sameDoctors.isEmpty()) {
-                //Koi alternative doctor nahi — appointments CANCELLED kar do
-                appointments.forEach(a -> {
-                    a.setStatus(Appointment.AppointmentStatus.CANCELLED);
-                    a.setDoctor(null);
-                });
+                appointments.forEach(a ->
+                        a.setStatus(Appointment.AppointmentStatus.CANCELLED));
                 appointmentRepository.saveAll(appointments);
             } else {
-                //Alternative doctor mil gaya — appointments shift karo
                 Doctor alternativeDoctor = sameDoctors.get(0);
                 appointments.forEach(a -> a.setDoctor(alternativeDoctor));
                 appointmentRepository.saveAll(appointments);
             }
         }
 
-        //Doctor delete karo
         doctorRepository.deleteById(id);
+    }
+
+    // ─── Doctor Leave ─────────────────────────────────────────
+    public String applyLeave(Long doctorId, DoctorLeaveRequestDTO leaveRequest) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Doctor not found with id: " + doctorId));
+
+        // ✅ Doctor ko leave pe mark karo
+        doctor.setOnLeave(true);
+        doctor.setAvailable(false);
+        doctor.setLeaveStartDate(leaveRequest.getLeaveStartDate());
+        doctor.setLeaveEndDate(leaveRequest.getLeaveEndDate());
+        doctorRepository.save(doctor);
+
+        // ✅ Doctor ki appointments fetch karo
+        List<Appointment> appointments = appointmentRepository.findByDoctorId(doctorId);
+
+        // ✅ Same specialization ka available doctor dhundo
+        List<Doctor> availableDoctors = doctorRepository
+                .findBySpecializationContainingIgnoreCase(doctor.getSpecialization())
+                .stream()
+                .filter(d -> !d.getId().equals(doctorId) && d.isAvailable() && !d.isOnLeave())
+                .collect(Collectors.toList());
+
+        int shiftedCount = 0;
+        int postponedCount = 0;
+
+        for (Appointment appointment : appointments) {
+            if (appointment.getStatus() == Appointment.AppointmentStatus.PENDING ||
+                    appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
+
+                if (!availableDoctors.isEmpty()) {
+                    // ✅ Alternative doctor mila — shift karo
+                    Doctor alternativeDoctor = availableDoctors.get(0);
+                    appointment.setDoctor(alternativeDoctor);
+                    appointment.setStatus(Appointment.AppointmentStatus.PENDING);
+                    shiftedCount++;
+                } else {
+                    // ✅ Koi doctor nahi — postpone karo
+                    appointment.setStatus(Appointment.AppointmentStatus.POSTPONED);
+                    appointment.setPostponedDate(
+                            appointment.getAppointmentDate()
+                                    .plusDays(leaveRequest.getPostponeDays()));
+                    appointment.setPostponedTime(appointment.getAppointmentTime());
+                    appointment.setPostponeReason(
+                            "Dr. " + doctor.getName() + " is on leave from " +
+                                    leaveRequest.getLeaveStartDate() + " to " +
+                                    leaveRequest.getLeaveEndDate());
+                    postponedCount++;
+                }
+            }
+        }
+
+        appointmentRepository.saveAll(appointments);
+
+        return "Leave applied successfully! " +
+                shiftedCount + " appointments shifted, " +
+                postponedCount + " appointments postponed.";
+    }
+
+    // ─── Doctor Return From Leave ─────────────────────────────
+    public String returnFromLeave(Long doctorId) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Doctor not found with id: " + doctorId));
+
+        // ✅ Doctor wapas available karo
+        doctor.setOnLeave(false);
+        doctor.setAvailable(true);
+        doctor.setLeaveStartDate(null);
+        doctor.setLeaveEndDate(null);
+        doctorRepository.save(doctor);
+
+        // ✅ Postponed appointments wapas restore karo
+        List<Appointment> postponedAppointments = appointmentRepository
+                .findByDoctorId(doctorId)
+                .stream()
+                .filter(a -> a.getStatus() == Appointment.AppointmentStatus.POSTPONED)
+                .collect(Collectors.toList());
+
+        for (Appointment appointment : postponedAppointments) {
+            if (appointment.getPostponedDate() != null) {
+                appointment.setAppointmentDate(appointment.getPostponedDate());
+                appointment.setAppointmentTime(appointment.getPostponedTime());
+                appointment.setPostponedDate(null);
+                appointment.setPostponedTime(null);
+                appointment.setPostponeReason(null);
+            }
+            appointment.setStatus(Appointment.AppointmentStatus.PENDING);
+            appointment.setDoctor(doctor);
+        }
+
+        appointmentRepository.saveAll(postponedAppointments);
+
+        return "Doctor " + doctor.getName() + " is back! " +
+                postponedAppointments.size() + " appointments restored.";
     }
 
     // ─── Get By Specialization ───────────────────────────────

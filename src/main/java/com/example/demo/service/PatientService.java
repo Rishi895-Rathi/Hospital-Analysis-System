@@ -7,6 +7,7 @@ import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +22,9 @@ public class PatientService {
 
     @Autowired
     private AppointmentRepository appointmentRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // ─── Convert Entity to DTO ────────────────────────────────
     private PatientResponseDTO toDTO(Patient patient) {
@@ -40,6 +44,22 @@ public class PatientService {
 
     // ─── Add Patient ─────────────────────────────────────────
     public PatientResponseDTO addPatient(Patient patient) {
+
+        //Email unique check
+        if (patientRepository.findByEmail(patient.getEmail()).isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Email already registered: " + patient.getEmail());
+        }
+
+        //Phone unique check
+        if (patientRepository.findByPhone(patient.getPhone()).isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Phone already registered: " + patient.getPhone());
+        }
+
+        //Password encode karo
+        patient.setPassword(passwordEncoder.encode(patient.getPassword()));
+
         Patient saved = patientRepository.save(patient);
         return toDTO(saved);
     }
