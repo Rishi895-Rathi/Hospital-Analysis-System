@@ -1,5 +1,6 @@
 package com.example.demo.Controller;
 
+import com.example.demo.DTO.DoctorLeaveRequestDTO;
 import com.example.demo.DTO.DoctorResponseDTO;
 import com.example.demo.model.Doctor;
 import com.example.demo.service.DoctorService;
@@ -68,7 +69,7 @@ public class DoctorController {
         return new ResponseEntity<>(doctors, HttpStatus.OK);
     }
 
-    // Leave apply karo
+    //Leave apply karo
     @PutMapping("/leave/{id}")
     public ResponseEntity<String> applyLeave(@PathVariable Long id,
                                              @RequestBody DoctorLeaveRequestDTO leaveRequest) {

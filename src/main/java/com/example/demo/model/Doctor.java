@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,13 +32,15 @@ public class Doctor {
     private String department;
 
     private boolean available = true;
-
     private boolean onLeave = false;
+
     private LocalDate leaveStartDate;
     private LocalDate leaveEndDate;
 
     @Column(length = 500)
     private String bio;
+
+    private String password;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -51,6 +54,4 @@ public class Doctor {
     public void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-    private String password;
 }

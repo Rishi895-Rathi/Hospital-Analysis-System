@@ -43,6 +43,9 @@ public class AppointmentService {
                 .appointmentTime(appointment.getAppointmentTime())
                 .status(appointment.getStatus().name())
                 .reason(appointment.getReason())
+                .postponedDate(appointment.getPostponedDate())
+                .postponedTime(appointment.getPostponedTime())
+                .postponeReason(appointment.getPostponeReason())
                 .build();
     }
 
@@ -61,7 +64,11 @@ public class AppointmentService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + requestDTO.getDoctorId()));
 
-        // Conflict Check — same doctor, same date, same time
+        if (doctor.isOnLeave()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Doctor is on leave. Please choose another doctor.");
+        }
+
         boolean conflict = appointmentRepository
                 .existsByDoctor_IdAndAppointmentDateAndAppointmentTime(
                         requestDTO.getDoctorId(),
@@ -74,8 +81,7 @@ public class AppointmentService {
                     HttpStatus.CONFLICT,
                     "Doctor already has an appointment on " +
                             requestDTO.getAppointmentDate() + " at " +
-                            requestDTO.getAppointmentTime()
-            );
+                            requestDTO.getAppointmentTime());
         }
 
         Appointment appointment = new Appointment();

@@ -31,6 +31,70 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // ─── Patient Register ─────────────────────────────────────
+    @PostMapping("/patient/register")
+    public ResponseEntity<Map<String, String>> patientRegister(
+            @RequestBody Patient patient) {
+
+        if (patientRepository.findByEmail(patient.getEmail()).isPresent()) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Email already registered"),
+                    HttpStatus.CONFLICT);
+        }
+
+        if (patientRepository.findByPhone(patient.getPhone()).isPresent()) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Phone already registered"),
+                    HttpStatus.CONFLICT);
+        }
+
+        patient.setPassword(passwordEncoder.encode(patient.getPassword()));
+        Patient saved = patientRepository.save(patient);
+
+        String token = jwtUtil.generateToken(saved.getEmail(), "PATIENT");
+
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        response.put("role", "PATIENT");
+        response.put("name", saved.getName());
+        response.put("patientId", String.valueOf(saved.getPatient_id()));
+        response.put("message", "Patient registered successfully!");
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    // ─── Doctor Register ──────────────────────────────────────
+    @PostMapping("/doctor/register")
+    public ResponseEntity<Map<String, String>> doctorRegister(
+            @RequestBody Doctor doctor) {
+
+        if (doctorRepository.findByEmailId(doctor.getEmailId()).isPresent()) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Email already registered"),
+                    HttpStatus.CONFLICT);
+        }
+
+        if (doctorRepository.findByContactNumber(doctor.getContactNumber()).isPresent()) {
+            return new ResponseEntity<>(
+                    Map.of("error", "Phone already registered"),
+                    HttpStatus.CONFLICT);
+        }
+
+        doctor.setPassword(passwordEncoder.encode(doctor.getPassword()));
+        Doctor saved = doctorRepository.save(doctor);
+
+        String token = jwtUtil.generateToken(saved.getEmailId(), "DOCTOR");
+
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        response.put("role", "DOCTOR");
+        response.put("name", saved.getName());
+        response.put("doctorId", String.valueOf(saved.getId()));
+        response.put("message", "Doctor registered successfully!");
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
     // ─── Patient Login ────────────────────────────────────────
     @PostMapping("/patient/login")
     public ResponseEntity<Map<String, String>> patientLogin(

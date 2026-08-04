@@ -33,14 +33,16 @@ public class Appointment {
 
     private String reason;
 
+    //Postpone fields
     private LocalDate postponedDate;
     private LocalTime postponedTime;
     private String postponeReason;
 
     private LocalDateTime createdAt;
 
+    //POSTPONED add
     public enum AppointmentStatus {
-        PENDING, CONFIRMED, CANCELLED, COMPLETED
+        PENDING, CONFIRMED, CANCELLED, COMPLETED, POSTPONED
     }
 
     @PrePersist

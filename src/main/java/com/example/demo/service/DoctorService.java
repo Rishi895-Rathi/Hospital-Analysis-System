@@ -124,17 +124,17 @@ public class DoctorService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + doctorId));
 
-        // ✅ Doctor ko leave pe mark karo
+        //Doctor ko leave pe mark karo
         doctor.setOnLeave(true);
         doctor.setAvailable(false);
         doctor.setLeaveStartDate(leaveRequest.getLeaveStartDate());
         doctor.setLeaveEndDate(leaveRequest.getLeaveEndDate());
         doctorRepository.save(doctor);
 
-        // ✅ Doctor ki appointments fetch karo
+        //Doctor ki appointments fetch karo
         List<Appointment> appointments = appointmentRepository.findByDoctorId(doctorId);
 
-        // ✅ Same specialization ka available doctor dhundo
+        //Same specialization ka available doctor dhundo
         List<Doctor> availableDoctors = doctorRepository
                 .findBySpecializationContainingIgnoreCase(doctor.getSpecialization())
                 .stream()
@@ -149,13 +149,13 @@ public class DoctorService {
                     appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
 
                 if (!availableDoctors.isEmpty()) {
-                    // ✅ Alternative doctor mila — shift karo
+                    //Alternative doctor mila — shift karo
                     Doctor alternativeDoctor = availableDoctors.get(0);
                     appointment.setDoctor(alternativeDoctor);
                     appointment.setStatus(Appointment.AppointmentStatus.PENDING);
                     shiftedCount++;
                 } else {
-                    // ✅ Koi doctor nahi — postpone karo
+                    //Koi doctor nahi — postpone karo
                     appointment.setStatus(Appointment.AppointmentStatus.POSTPONED);
                     appointment.setPostponedDate(
                             appointment.getAppointmentDate()
@@ -183,14 +183,14 @@ public class DoctorService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + doctorId));
 
-        // ✅ Doctor wapas available karo
+        //Doctor wapas available karo
         doctor.setOnLeave(false);
         doctor.setAvailable(true);
         doctor.setLeaveStartDate(null);
         doctor.setLeaveEndDate(null);
         doctorRepository.save(doctor);
 
-        // ✅ Postponed appointments wapas restore karo
+        //Postponed appointments wapas restore karo
         List<Appointment> postponedAppointments = appointmentRepository
                 .findByDoctorId(doctorId)
                 .stream()
