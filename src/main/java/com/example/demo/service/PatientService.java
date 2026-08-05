@@ -11,6 +11,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+//pagination ki classes or library
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,14 +70,13 @@ public class PatientService {
     }
 
     // ─── Get All Patients ────────────────────────────────────
-    public List<PatientResponseDTO> getAllPatients() {
-        return patientRepository.findAll()
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public Page<PatientResponseDTO> getAllPatients(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return patientRepository.findAll(pageable)
+                .map(this::toDTO);
     }
 
-    // ─── Get Patient By ID ───────────────────────────────────
+        // ─── Get Patient By ID ───────────────────────────────────
     public PatientResponseDTO getPatientById(Long id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(

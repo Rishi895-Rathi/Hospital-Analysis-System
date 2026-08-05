@@ -12,6 +12,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+//pagination classes and library
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,11 +61,18 @@ public class DoctorService {
     }
 
     // ─── Get All Doctors ─────────────────────────────────────
-    public List<DoctorResponseDTO> getAllDoctors() {
-        return doctorRepository.findAll()
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+//    public List<DoctorResponseDTO> getAllDoctors() {
+//        return doctorRepository.findAll()
+//                .stream()
+//                .map(this::toDTO)
+//                .collect(Collectors.toList());
+//    }
+
+    //pagination added here last one don't have pagination
+    public Page<DoctorResponseDTO> getAllDoctors(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return doctorRepository.findAll(pageable)
+                .map(this::toDTO);
     }
 
     // ─── Get Doctor By ID ────────────────────────────────────

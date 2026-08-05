@@ -5,6 +5,7 @@ import com.example.demo.DTO.DoctorResponseDTO;
 import com.example.demo.model.Doctor;
 import com.example.demo.service.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +25,12 @@ public class DoctorController {
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 
+    //pagination added
     @GetMapping("/all")
-    public ResponseEntity<List<DoctorResponseDTO>> getAllDoctors() {
-        List<DoctorResponseDTO> doctors = doctorService.getAllDoctors();
+    public ResponseEntity<Page<DoctorResponseDTO>> getAllDoctors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<DoctorResponseDTO> doctors = doctorService.getAllDoctors(page, size);
         return new ResponseEntity<>(doctors, HttpStatus.OK);
     }
 

@@ -5,6 +5,7 @@ import com.example.demo.model.Patient;
 import com.example.demo.service.PatientService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +26,10 @@ public class PatientController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<PatientResponseDTO>> getAllPatients() {
-        List<PatientResponseDTO> patients = patientService.getAllPatients();
+    public ResponseEntity<Page<PatientResponseDTO>> getAllPatients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<PatientResponseDTO> patients = patientService.getAllPatients(page, size);
         return new ResponseEntity<>(patients, HttpStatus.OK);
     }
 
