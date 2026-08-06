@@ -34,9 +34,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui.html",
+                        .requestMatchers(
+                                "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/api-docs/**").permitAll()
+                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
 
                         .requestMatchers(HttpMethod.PUT, "/api/doctor/leave/**").hasRole("DOCTOR")
                         .requestMatchers(HttpMethod.PUT, "/api/doctor/return/**").hasRole("DOCTOR")
