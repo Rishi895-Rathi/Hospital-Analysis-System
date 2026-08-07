@@ -6,15 +6,15 @@ import com.example.demo.model.Patient;
 import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-//pagination ki classes or library
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -48,35 +48,30 @@ public class PatientService {
     }
 
     // ─── Add Patient ─────────────────────────────────────────
+    @CacheEvict(value = "patients", allEntries = true)
     public PatientResponseDTO addPatient(Patient patient) {
-
-        //Email unique check
         if (patientRepository.findByEmail(patient.getEmail()).isPresent()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Email already registered: " + patient.getEmail());
         }
-
-        //Phone unique check
         if (patientRepository.findByPhone(patient.getPhone()).isPresent()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Phone already registered: " + patient.getPhone());
         }
-
-        //Password encode karo
         patient.setPassword(passwordEncoder.encode(patient.getPassword()));
-
         Patient saved = patientRepository.save(patient);
         return toDTO(saved);
     }
 
-    // ─── Get All Patients ────────────────────────────────────
+    // ─── Get All Patients (Cached) ────────────────────────────
+    @Cacheable(value = "patients", key = "#page + '-' + #size")
     public Page<PatientResponseDTO> getAllPatients(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return patientRepository.findAll(pageable)
                 .map(this::toDTO);
     }
 
-        // ─── Get Patient By ID ───────────────────────────────────
+    // ─── Get Patient By ID ───────────────────────────────────
     public PatientResponseDTO getPatientById(Long id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -85,6 +80,7 @@ public class PatientService {
     }
 
     // ─── Update Patient ──────────────────────────────────────
+    @CacheEvict(value = "patients", allEntries = true)
     public PatientResponseDTO updatePatient(Long id, Patient updatedPatient) {
         Patient existing = patientRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -103,13 +99,13 @@ public class PatientService {
     }
 
     // ─── Delete Patient + Cancel Appointments ────────────────
+    @CacheEvict(value = "patients", allEntries = true)
     public void deletePatient(Long id) {
         if (!patientRepository.existsById(id)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "Patient not found with id: " + id);
         }
 
-        //Patient ki saari appointments cancel karo
         List<Appointment> appointments = appointmentRepository.findByPatientId(id);
         if (!appointments.isEmpty()) {
             appointments.forEach(a ->
@@ -117,7 +113,6 @@ public class PatientService {
             appointmentRepository.saveAll(appointments);
         }
 
-        //Phir patient delete karo
         patientRepository.deleteById(id);
     }
 

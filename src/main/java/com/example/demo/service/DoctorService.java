@@ -7,15 +7,15 @@ import com.example.demo.model.Doctor;
 import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-//pagination classes and library
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,6 +46,7 @@ public class DoctorService {
     }
 
     // ─── Add Doctor ──────────────────────────────────────────
+    @CacheEvict(value = "doctors", allEntries = true)
     public DoctorResponseDTO addDoctor(Doctor doctor) {
         if (doctorRepository.findByEmailId(doctor.getEmailId()).isPresent()) {
             throw new ResponseStatusException(
@@ -60,15 +61,8 @@ public class DoctorService {
         return toDTO(saved);
     }
 
-    // ─── Get All Doctors ─────────────────────────────────────
-//    public List<DoctorResponseDTO> getAllDoctors() {
-//        return doctorRepository.findAll()
-//                .stream()
-//                .map(this::toDTO)
-//                .collect(Collectors.toList());
-//    }
-
-    //pagination added here last one don't have pagination
+    // ─── Get All Doctors (Cached) ─────────────────────────────
+    @Cacheable(value = "doctors", key = "#page + '-' + #size")
     public Page<DoctorResponseDTO> getAllDoctors(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return doctorRepository.findAll(pageable)
@@ -84,6 +78,7 @@ public class DoctorService {
     }
 
     // ─── Update Doctor ───────────────────────────────────────
+    @CacheEvict(value = "doctors", allEntries = true)
     public DoctorResponseDTO updateDoctor(Long id, Doctor updatedDoctor) {
         Doctor existing = doctorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -102,6 +97,7 @@ public class DoctorService {
     }
 
     // ─── Delete Doctor + Shift Appointments ──────────────────
+    @CacheEvict(value = "doctors", allEntries = true)
     public void deleteDoctor(Long id) {
         Doctor deletedDoctor = doctorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -131,22 +127,20 @@ public class DoctorService {
     }
 
     // ─── Doctor Leave ─────────────────────────────────────────
+    @CacheEvict(value = "doctors", allEntries = true)
     public String applyLeave(Long doctorId, DoctorLeaveRequestDTO leaveRequest) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + doctorId));
 
-        //Doctor ko leave pe mark karo
         doctor.setOnLeave(true);
         doctor.setAvailable(false);
         doctor.setLeaveStartDate(leaveRequest.getLeaveStartDate());
         doctor.setLeaveEndDate(leaveRequest.getLeaveEndDate());
         doctorRepository.save(doctor);
 
-        //Doctor ki appointments fetch karo
         List<Appointment> appointments = appointmentRepository.findByDoctorId(doctorId);
 
-        //Same specialization ka available doctor dhundo
         List<Doctor> availableDoctors = doctorRepository
                 .findBySpecializationContainingIgnoreCase(doctor.getSpecialization())
                 .stream()
@@ -161,13 +155,11 @@ public class DoctorService {
                     appointment.getStatus() == Appointment.AppointmentStatus.CONFIRMED) {
 
                 if (!availableDoctors.isEmpty()) {
-                    //Alternative doctor mila — shift karo
                     Doctor alternativeDoctor = availableDoctors.get(0);
                     appointment.setDoctor(alternativeDoctor);
                     appointment.setStatus(Appointment.AppointmentStatus.PENDING);
                     shiftedCount++;
                 } else {
-                    //Koi doctor nahi — postpone karo
                     appointment.setStatus(Appointment.AppointmentStatus.POSTPONED);
                     appointment.setPostponedDate(
                             appointment.getAppointmentDate()
@@ -190,19 +182,18 @@ public class DoctorService {
     }
 
     // ─── Doctor Return From Leave ─────────────────────────────
+    @CacheEvict(value = "doctors", allEntries = true)
     public String returnFromLeave(Long doctorId) {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Doctor not found with id: " + doctorId));
 
-        //Doctor wapas available karo
         doctor.setOnLeave(false);
         doctor.setAvailable(true);
         doctor.setLeaveStartDate(null);
         doctor.setLeaveEndDate(null);
         doctorRepository.save(doctor);
 
-        //Postponed appointments wapas restore karo
         List<Appointment> postponedAppointments = appointmentRepository
                 .findByDoctorId(doctorId)
                 .stream()

@@ -1,13 +1,14 @@
 package com.example.demo.DTO;
-import lombok.*;
 
+import lombok.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DoctorResponseDTO {
+public class DoctorResponseDTO implements Serializable {
 
     private Long Doctor_id;
     private String name;
@@ -16,6 +17,4 @@ public class DoctorResponseDTO {
     private String phone;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-
 }
