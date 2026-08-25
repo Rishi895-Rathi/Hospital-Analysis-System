@@ -537,3 +537,165 @@ URLS:
 App:     http://localhost:8081
 Swagger: http://localhost:8081/swagger-ui.html
 API Doc: http://localhost:8081/api-docs
+
+
+
+
+DATA BASE DESIGN 
+## 🗄️ Database Design
+
+### Overview
+The Hospital Management System uses **PostgreSQL** as the primary relational database.
+The schema consists of 4 core tables with proper relationships, constraints, and indexes.
+
+---
+
+### Entity Relationship Diagram
+Patient (1) -------- (M) Appointments
+Doctor  (1) -------- (M) Appointments
+Patient (1) -------- (M) Billing
+### Tables
+
+#### 1. `patients`
+Stores all patient information — both registered users and walk-in patients.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `patient_id` | BIGSERIAL | PRIMARY KEY | Auto-generated unique ID |
+| `name` | VARCHAR | NOT NULL | Patient full name |
+| `age` | INTEGER | NOT NULL | Patient age |
+| `email` | VARCHAR | UNIQUE, NOT NULL | Login email |
+| `phone` | VARCHAR | UNIQUE | Contact number |
+| `password` | VARCHAR | | BCrypt encoded password |
+| `disease` | VARCHAR | | Primary disease/complaint |
+| `blood_group` | VARCHAR | | Blood group (A+, B+, etc.) |
+| `address` | VARCHAR(500) | | Patient address |
+| `created_at` | TIMESTAMP | | Auto-set on creation |
+| `updated_at` | TIMESTAMP | | Auto-set on update |
+
+---
+
+#### 2. `doctors`
+Stores doctor profiles, specializations, availability, and leave information.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGSERIAL | PRIMARY KEY | Auto-generated unique ID |
+| `name` | VARCHAR | NOT NULL | Doctor full name |
+| `email_id` | VARCHAR | UNIQUE, NOT NULL | Login email |
+| `contact_number` | BIGINT | UNIQUE | Contact number |
+| `specialization` | VARCHAR | NOT NULL | Medical specialization |
+| `department` | VARCHAR | NOT NULL | Hospital department |
+| `available` | BOOLEAN | DEFAULT true | Current availability |
+| `on_leave` | BOOLEAN | DEFAULT false | Leave status |
+| `leave_start_date` | DATE | | Leave start date |
+| `leave_end_date` | DATE | | Leave end date |
+| `bio` | VARCHAR(500) | | Doctor biography |
+| `password` | VARCHAR | | BCrypt encoded password |
+| `created_at` | TIMESTAMP | | Auto-set on creation |
+| `updated_at` | TIMESTAMP | | Auto-set on update |
+
+---
+
+#### 3. `appointments`
+Central table managing all patient-doctor appointments with status tracking.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGSERIAL | PRIMARY KEY | Auto-generated unique ID |
+| `patient_id` | BIGINT | FK → patients | Reference to patient |
+| `doctor_id` | BIGINT | FK → doctors | Reference to doctor |
+| `appointment_date` | DATE | NOT NULL | Scheduled date |
+| `appointment_time` | TIME | NOT NULL | Scheduled time |
+| `status` | VARCHAR | ENUM | PENDING/CONFIRMED/CANCELLED/COMPLETED/POSTPONED |
+| `reason` | VARCHAR | | Reason for visit |
+| `postponed_date` | DATE | | New date if postponed |
+| `postponed_time` | TIME | | New time if postponed |
+| `postpone_reason` | VARCHAR | | Reason for postponement |
+| `created_at` | TIMESTAMP | | Auto-set on creation |
+
+---
+
+#### 4. `billing`
+Tracks all financial transactions for patient treatments.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGSERIAL | PRIMARY KEY | Auto-generated unique ID |
+| `patient_name` | VARCHAR | NOT NULL | Patient name |
+| `total_amount` | FLOAT | | Total bill amount |
+| `paid_amount` | FLOAT | | Amount paid |
+| `remaining_amount` | FLOAT | | Auto-calculated remaining |
+| `payment_status` | VARCHAR | ENUM | PAID/PARTIAL/PENDING |
+| `payment_method` | VARCHAR | ENUM | CASH/CARD/UPI |
+
+---
+
+### Relationships
+
+| Relationship | Type | Description |
+|---|---|---|
+| Patient → Appointments | One-to-Many | One patient can have multiple appointments |
+| Doctor → Appointments | One-to-Many | One doctor can have multiple appointments |
+| Patient → Billing | One-to-Many | One patient can have multiple bills |
+
+---
+
+### Business Logic in Database
+
+#### Auto-calculations
+```sql
+-- remainingAmount auto-calculated on save
+remaining_amount = total_amount - paid_amount
+
+-- paymentStatus auto-set based on amounts
+IF paid_amount = 0        → PENDING
+IF remaining_amount <= 0  → PAID
+ELSE                      → PARTIAL
+```
+
+#### Appointment Status Flow
+
+PENDING → CONFIRMED → COMPLETED
+↓
+CANCELLED
+
+PENDING → POSTPONED → PENDING (when doctor returns)
+
+
+#### Doctor Leave Flow
+
+Doctor applies leave
+↓
+Find available doctor with same specialization
+↓
+Found?
+/
+Yes No
+↓ ↓
+Shift Postpone
+appointments appointments
+(same date) (new date)
+
+
+---
+
+### Constraints & Validations
+
+| Rule | Implementation |
+|---|---|
+| Unique email per patient | `@Column(unique = true)` |
+| Unique phone per patient | `@Column(unique = true)` |
+| Unique email per doctor | `@Column(unique = true)` |
+| Unique phone per doctor | `@Column(unique = true)` |
+| No double booking | `existsByDoctor_IdAndAppointmentDateAndAppointmentTime` |
+| Password encrypted | BCrypt encoding |
+
+---
+
+### Caching Strategy (Redis)
+
+| Cache | Key Pattern | TTL | Eviction |
+|---|---|---|---|
+| `doctors` | `page-size` | 5 min | On add/update/delete |
+| `patients` | `page-size` | 5 min | On add/update/delete |
