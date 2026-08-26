@@ -699,3 +699,42 @@ appointments appointments
 |---|---|---|---|
 | `doctors` | `page-size` | 5 min | On add/update/delete |
 | `patients` | `page-size` | 5 min | On add/update/delete |
+
+
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| **Frontend** | https://hospital-analysis-system.vercel.app |
+| **Backend API** | https://hospital-rishi.duckdns.org |
+| **Swagger UI** | https://hospital-rishi.duckdns.org/swagger-ui.html |
+
+### Test Credentials
+| Role | Email | Password |
+|------|-------|----------|
+| Doctor | test@hospital.com | test123 |
+
+## ☁️ Deployment Architecture
+
+User
+↓
+Vercel (Frontend - React)
+↓
+AWS EC2 (Backend - Spring Boot)
+├── Nginx (Reverse Proxy + SSL)
+├── Redis (Docker - Caching)
+└── AWS RDS PostgreSQL (Database)
+
+
+## 🔧 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React.js, TanStack, Tailwind CSS |
+| Backend | Java 17, Spring Boot 3.3.2 |
+| Database | PostgreSQL (AWS RDS) |
+| Cache | Redis (Docker) |
+| Security | JWT Authentication |
+| Deployment | AWS EC2, Vercel |
+| SSL | Let's Encrypt (Certbot) |
+| Proxy | Nginx |
