@@ -701,6 +701,11 @@ appointments appointments
 | `patients` | `page-size` | 5 min | On add/update/delete |
 
 
+
+Commands Reference
+
+All commands used in this project with their meanings are documented in:
+👉 [COMMANDS.md](./COMMANDS.md)
 ## 🌐 Live Demo
 
 | Service | URL |
