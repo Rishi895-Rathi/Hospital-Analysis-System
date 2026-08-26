@@ -15,9 +15,9 @@ public class CorsConfig {
 
         //Vercel URL add kiya
         config.addAllowedOrigin("https://hospital-analysis-system.vercel.app");
+        config.addAllowedOrigin("https://hospital-rishi.duckdns.org");
         config.addAllowedOrigin("http://localhost:8080");
         config.addAllowedOrigin("http://localhost:5173");
-        config.addAllowedOrigin("http://localhost:3000");
 
         config.addAllowedMethod("GET");
         config.addAllowedMethod("POST");
