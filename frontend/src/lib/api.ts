@@ -1,4 +1,4 @@
-export const API_BASE = "http://13.53.158.214:8081";
+export const API_BASE = import.meta.env.VITE_API_BASE || "http://13.53.158.214:8081";
 
 export type Role = "DOCTOR" | "PATIENT";
 
