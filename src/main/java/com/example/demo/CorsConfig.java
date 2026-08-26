@@ -13,6 +13,8 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
+        //Vercel URL add kiya
+        config.addAllowedOrigin("https://hospital-analysis-system.vercel.app");
         config.addAllowedOrigin("http://localhost:8080");
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://localhost:3000");
