@@ -172,3 +172,56 @@ This file documents all commands used in this project with their meanings.
 | `JWT_EXPIRATION` | Token expiry time (milliseconds) |
 | `REDIS_HOST` | Redis server host |
 | `REDIS_PORT` | Redis server port |
+
+
+## 🔄 GitHub Actions / CI-CD
+
+| Command/Action | Meaning |
+|----------------|---------|
+| `git push` | Code push karo — auto deploy trigger hoga |
+| GitHub → Actions tab | Deployment status dekho |
+| "Re-run all jobs" | Failed workflow dobara run karo |
+
+## 🔑 GitHub Secrets
+
+| Secret | Meaning |
+|--------|---------|
+| `EC2_HOST` | EC2 ka Elastic IP |
+| `EC2_SSH_KEY` | EC2 SSH private key (github_actions file) |
+
+## 🔄 EC2 Start/Stop Workflow
+
+### Start karne ka order:
+| Step | Action |
+|------|--------|
+| 1 | AWS RDS → Start → Available hone tak wait karo |
+| 2 | AWS EC2 → Start |
+| 3 | SSH connect karo |
+| 4 | `sudo docker start redis` |
+| 5 | `sudo systemctl start hospital` |
+
+### Stop karne ka order:
+| Step | Action |
+|------|--------|
+| 1 | `sudo docker stop redis` |
+| 2 | `sudo systemctl stop hospital` |
+| 3 | AWS EC2 → Stop |
+| 4 | AWS RDS → Stop temporarily |
+
+## ☁️ Important AWS Notes
+
+| Resource | Note |
+|----------|------|
+| Elastic IP | EC2 se associated rakhna — warna charge lagega |
+| RDS | Stop karne pe data safe rahta hai |
+| EC2 | Stop/Start pe Elastic IP same rahti hai |
+| Redis | EC2 restart pe manually start karna hoga |
+
+## 🌐 Live URLs
+
+| Service | URL |
+|---------|-----|
+| Frontend | https://hospital-analysis-system.vercel.app |
+| Backend | https://hospital-rishi.duckdns.org |
+| Swagger | https://hospital-rishi.duckdns.org/swagger-ui.html |
+| GitHub | https://github.com/Rishi895-Rathi/Hospital-Analysis-System |
