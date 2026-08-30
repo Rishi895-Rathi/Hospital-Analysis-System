@@ -743,3 +743,35 @@ AWS EC2 (Backend - Spring Boot)
 | Deployment | AWS EC2, Vercel |
 | SSL | Let's Encrypt (Certbot) |
 | Proxy | Nginx |
+
+## 🔄 CI/CD Pipeline
+
+This project uses GitHub Actions for automatic deployment.
+
+### How it works:
+1. Push code to `main` branch
+2. GitHub Actions triggers automatically
+3. SSH connects to EC2
+4. Pulls latest code
+5. Builds JAR
+6. Restarts service
+
+## 🚀 Deployment
+
+### Prerequisites
+- AWS EC2 (Ubuntu 22.04)
+- AWS RDS PostgreSQL
+- Redis (Docker)
+- Nginx + SSL (Let's Encrypt)
+
+### GitHub Secrets Required
+| Secret | Description |
+|--------|-------------|
+| `EC2_HOST` | EC2 Elastic IP address |
+| `EC2_SSH_KEY` | EC2 SSH private key |
+
+### Start Application (After EC2 restart)
+```bash
+sudo docker start redis
+sudo systemctl start hospital
+```
